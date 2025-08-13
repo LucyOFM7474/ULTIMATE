@@ -75,8 +75,7 @@ export default async function handler(req, res) {
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      max_completion_tokens: 900, // Înlocuit max_tokens cu max_completion_tokens
-      temperature: 0.7,
+      max_completion_tokens: 900,
     });
 
     const reply = completion.choices[0]?.message?.content || "Fără răspuns valid";

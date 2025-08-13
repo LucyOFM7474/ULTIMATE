@@ -37,7 +37,10 @@ function incarcaAnaliza(meci) {
 async function analizeaza() {
   const prompt = document.getElementById("prompt").value.trim();
   const rezultat = document.getElementById("rezultat");
-  if (!prompt) return (rezultat.textContent = "⚠️ Introdu un meci valid");
+  if (!prompt) {
+    rezultat.textContent = "⚠️ Introdu un meci valid";
+    return;
+  }
 
   rezultat.textContent = "⏳ Se analizează...";
 
@@ -47,11 +50,18 @@ async function analizeaza() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
+    if (!r.ok) {
+      throw new Error(`Eroare HTTP: ${r.status} ${r.statusText}`);
+    }
     const d = await r.json();
-    rezultat.textContent = d.reply || `❌ ${d.error}`;
+    if (d.error) {
+      throw new Error(d.error);
+    }
+    rezultat.textContent = d.reply || "❌ Fără răspuns valid";
     salveazaIstoric(prompt, d.reply);
-  } catch {
-    rezultat.textContent = "💥 Eroare rețea - verifică conexiunea";
+  } catch (err) {
+    console.error("Eroare frontend:", err.message);
+    rezultat.textContent = `💥 Eroare: ${err.message}`;
   }
 }
 

@@ -44,7 +44,18 @@ export default async function handler(req, res) {
 
   let body;
   try {
-    body = await req.json();
+    body = await new Promise((resolve, reject) => {
+      let data = '';
+      req.on('data', chunk => data += chunk);
+      req.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (err) {
+          reject(err);
+        }
+      });
+      req.on('error', reject);
+    });
   } catch (err) {
     console.log("Invalid JSON body:", err.message);
     return res.status(400).json({ error: "Body JSON invalid" });

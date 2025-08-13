@@ -27,12 +27,13 @@ Folosește emoji-uri și text clar, bazat pe date statistice. Evită speculații
 `;
 
 export default async function handler(req, res) {
+  console.log("Request received:", req.method, req.url);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
-    console.log("Received OPTIONS request");
+    console.log("Handling OPTIONS request");
     return res.status(200).end();
   }
 
@@ -41,7 +42,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Doar POST permis" });
   }
 
-  const { prompt } = req.body;
+  let body;
+  try {
+    body = await req.json();
+  } catch (err) {
+    console.log("Invalid JSON body:", err.message);
+    return res.status(400).json({ error: "Body JSON invalid" });
+  }
+
+  const { prompt } = body;
   if (!prompt?.trim()) {
     console.log("No prompt provided");
     return res.status(400).json({ error: "Introdu un meci valid (ex. Rapid - FCSB)" });
@@ -50,7 +59,7 @@ export default async function handler(req, res) {
   try {
     console.log("Sending request to OpenAI for prompt:", prompt);
     const completion = await openai.chat.completions.create({
-      model: process.env.MODEL || "gpt-4o",
+      model: process.env.MODEL || "gpt-5",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },

@@ -45,13 +45,15 @@ async function analizeaza() {
   rezultat.textContent = "⏳ Se analizează...";
 
   try {
+    console.log("Fetching /api/chat with prompt:", prompt);
     const r = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
     if (!r.ok) {
-      throw new Error(`Eroare HTTP: ${r.status} ${r.statusText}`);
+      const errorText = await r.text();
+      throw new Error(`HTTP ${r.status}: ${errorText || r.statusText}`);
     }
     const d = await r.json();
     if (d.error) {
@@ -65,5 +67,4 @@ async function analizeaza() {
   }
 }
 
-// Inițializează istoricul la încărcare
 afiseazaIstoric();

@@ -1,14 +1,15 @@
 import { OpenAI } from "openai";
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const systemPrompt = `
 Ești **LucyOFM Bot**, analist profesionist român.  
 Returnează **10 puncte clare și numerotate**, cu simboluri:
 
-✅  consens surse  
-⚠️  atenție  
-📊  statistică cheie  
-🎯  pariu recomandat  
+✅ consens surse  
+⚠️ atenție  
+📊 statistică cheie  
+🎯 pariu recomandat  
 
 Structura fixă:
 1. Cote & predicții externe live (SportyTrader, PredictZ, WinDrawWin, Forebet, SportsGambler)
@@ -22,22 +23,34 @@ Structura fixă:
 9. Predicție scor exact
 10. Recomandări pariuri (✅ solist, 💰 valoare, 🎯 surpriză, ⚽ goluri, 🚩 cornere)
 
-Folosește culori și emoji-uri pentru claritate.
+Folosește emoji-uri și text clar, bazat pe date statistice. Evită speculații inutile.
 `;
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    console.log("Received OPTIONS request");
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Metoda nu este permisă" });
+    console.log("Method not allowed:", req.method);
+    return res.status(405).json({ error: "Doar POST permis" });
   }
 
   const { prompt } = req.body;
   if (!prompt?.trim()) {
-    return res.status(400).json({ error: "Introdu un meci valid" });
+    console.log("No prompt provided");
+    return res.status(400).json({ error: "Introdu un meci valid (ex. Rapid - FCSB)" });
   }
 
   try {
+    console.log("Sending request to OpenAI for prompt:", prompt);
     const completion = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: process.env.MODEL || "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
@@ -45,9 +58,12 @@ export default async function handler(req, res) {
       max_tokens: 900,
       temperature: 0.7,
     });
-    res.status(200).json({ reply: completion.choices[0].message.content });
+
+    const reply = completion.choices[0]?.message?.content || "Fără răspuns valid";
+    console.log("OpenAI response received");
+    res.status(200).json({ reply });
   } catch (err) {
     console.error("Eroare OpenAI:", err.message);
-    res.status(500).json({ error: "Eroare la procesarea cererii." });
+    res.status(500).json({ error: "Eroare la procesarea cererii: " + err.message });
   }
 }

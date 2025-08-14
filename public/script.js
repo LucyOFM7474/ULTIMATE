@@ -1,1 +1,49 @@
-function salveazaIstoric(meci, rezultat) { try { let istoric = JSON.parse(localStorage.getItem("lucyofm_istoric") || "[]"); istoric.unshift({ meci, rezultat, data: new Date().toISOString() }); localStorage.setItem("lucyofm_istoric", JSON.stringify(istoric.slice(0, 50))); } catch (e) { console.log("Eroare salvare istoric:", e); } } function stergeIstoric() { localStorage.removeItem("lucyofm_istoric"); location.reload(); } async function analizeaza() { const prompt = document.getElementById("prompt").value.trim(); const rezultat = document.getElementById("rezultat"); if (!prompt) { rezultat.textContent = "⚠️ Introdu un meci valid (ex: Rapid - FCSB)"; return; } rezultat.textContent = "⏳ Se analizează meciul..."; try { console.log("Trimit cerere pentru:", prompt); const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ prompt }), }); console.log("Status răspuns:", response.status); const data = await response.json(); console.log("Date primite:", data); if (data.success && data.reply) { rezultat.textContent = data.reply; salveazaIstoric(prompt, data.reply); } else { rezultat.textContent = `❌ Eroare: ${data.error || 'Răspuns invalid'}`; } } catch (error) { console.error("Eroare fetch:", error); rezultat.textContent = `💥 Eroare rețea: ${error.message}`; } } // Test la încărcarea paginii window.addEventListener('load', () => { console.log("Pagina încărcată - bot gata!"); });
+ async function analizeaza() {
+  const prompt = document.getElementById("prompt").value.trim();
+  const rezultat = document.getElementById("rezultat");
+  
+  if (!prompt) {
+    rezultat.textContent = "⚠️ Introdu un meci valid (exemplu: Rapid - FCSB)";
+    return;
+  }
+
+  rezultat.textContent = "⏳ Analizez meciul " + prompt + "...";
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ prompt: prompt })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success && data.reply) {
+      rezultat.textContent = data.reply;
+      salveazaIstoric(prompt, data.reply);
+    } else {
+      rezultat.textContent = "❌ " + (data.error || "Eroare necunoscuta");
+    }
+    
+  } catch (error) {
+    rezultat.textContent = "💥 Eroare: " + error.message;
+  }
+}
+
+function salveazaIstoric(meci, rezultat) {
+  try {
+    let istoric = JSON.parse(localStorage.getItem("lucyofm_istoric") || "[]");
+    istoric.unshift({ meci, rezultat, data: new Date().toISOString() });
+    localStorage.setItem("lucyofm_istoric", JSON.stringify(istoric.slice(0, 50)));
+  } catch (e) {
+    console.log("Istoric error:", e);
+  }
+}
+
+function stergeIstoric() {
+  localStorage.removeItem("lucyofm_istoric");
+  alert("Istoric sters!");
+  location.reload();
+}

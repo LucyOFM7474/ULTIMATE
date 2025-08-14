@@ -1,14 +1,26 @@
- export default async function handler(req, res) {
+ import OpenAI from 'openai';
+
+export default async function handler(req, res) {
+  // Configurare CORS corectă
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Metoda nepermisă" });
+  }
+
+  // Verifică dacă cheia API este prezentă
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('Lipsă OPENAI_API_KEY');
+    return res.status(500).json({ 
+      error: "Configurare server incompletă",
+      success: false 
+    });
   }
 
   try {
@@ -16,38 +28,17 @@
     
     if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
       return res.status(400).json({ 
-        error: "Te rog introdu un meci valid",
+        error: "Te rog introdu un meci valid (ex: Steaua - Dinamo)",
         success: false 
       });
     }
 
-    const { OpenAI } = await import('openai');
     const openai = new OpenAI({ 
-      apiKey: process.env.OPENAI_API_KEY 
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 30000 // 30s timeout
     });
 
-    const systemPrompt = `Esti LucyOFM Bot, analist profesionist roman de fotbal. 
-
-Analizeaza meciul cerut si returneaza EXACT 10 puncte numerotate cu simboluri:
-
-✅ consens surse
-⚠️ atentie  
-📊 statistica cheie
-🎯 pariu recomandat
-
-Structura obligatorie:
-1. Cote & predictii externe (SportyTrader, Forebet, etc.)
-2. H2H ultimele 5 meciuri directe
-3. Forma gazdelor (meciuri acasa)
-4. Forma oaspetilor (meciuri deplasare) 
-5. Clasament actual & motivatie
-6. GG & BTTS procente recente
-7. Cornere, posesie, cartonase - medii
-8. Jucatori importanti & absente
-9. Predictie scor exact
-10. Recomandari pariuri finale
-
-Foloseste emoji-uri si fii concis dar detaliat.`;
+    const systemPrompt = `Esti LucyOFM Bot, analist profesionist roman de fotbal...`; // Păstrează promptul original aici
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -55,28 +46,32 @@ Foloseste emoji-uri si fii concis dar detaliat.`;
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
       ],
-      max_tokens: 1000,
+      max_tokens: 1200,
       temperature: 0.7
     });
 
     const reply = completion.choices[0]?.message?.content;
     
     if (!reply) {
-      throw new Error('No reply from OpenAI');
+      throw new Error('Niciun răspuns de la OpenAI');
     }
 
-    console.log('Success - reply received for:', prompt);
-    
     return res.status(200).json({ 
       reply: reply,
       success: true
     });
 
   } catch (error) {
-    console.error('Handler error:', error);
+    console.error('Eroare API:', error);
+    
+    // Mesaje de eroare specifice
+    let errorMessage = error.message;
+    if (error instanceof OpenAI.APIError) {
+      errorMessage = `Eroare OpenAI: ${error.code} - ${error.message}`;
+    }
     
     return res.status(500).json({ 
-      error: error.message,
+      error: errorMessage,
       success: false
     });
   }

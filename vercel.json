@@ -1,26 +1,20 @@
  {
   "version": 2,
   "builds": [
-    { 
+    {
       "src": "api/chat.js",
-      "use": "@vercel/node",
-      "config": { 
-        "includeFiles": ["api/**"] 
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
-    { 
+    {
       "src": "/api/chat",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/chat.js"
+      "dest": "/api/chat.js",
+      "methods": ["POST", "OPTIONS"]
     },
-    { 
+    {
       "src": "/(.*)",
-      "dest": "/public/$1",
-      "headers": {
-        "Cache-Control": "public, max-age=3600"
-      }
+      "dest": "/public/$1"
     }
   ]
 }

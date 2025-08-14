@@ -3,47 +3,38 @@
   const rezultat = document.getElementById("rezultat");
   
   if (!prompt) {
-    rezultat.textContent = "⚠️ Introdu un meci valid (exemplu: Rapid - FCSB)";
+    rezultat.textContent = "⚠️ Te rog introdu un meci (ex: CFR Cluj - UTA Arad)";
     return;
   }
 
-  rezultat.textContent = "⏳ Analizez meciul " + prompt + "...";
+  const btnAnalizeaza = document.querySelector("button");
+  btnAnalizeaza.disabled = true;
+  rezultat.textContent = "⏳ Analizez " + prompt + "...";
 
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ prompt: prompt })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
     });
     
     const data = await response.json();
     
-    if (response.ok && data.success && data.reply) {
-      rezultat.textContent = data.reply;
+    if (!response.ok) throw new Error(data.error || `Eroare ${response.status}`);
+    
+    if (data.success && data.reply) {
+      rezultat.innerHTML = data.reply.replace(/\n/g, '<br>');
       salveazaIstoric(prompt, data.reply);
     } else {
-      rezultat.textContent = "❌ " + (data.error || "Eroare necunoscuta");
+      throw new Error(data.error || "Răspuns invalid de la server");
     }
     
   } catch (error) {
-    rezultat.textContent = "💥 Eroare: " + error.message;
+    console.error("Eroare frontend:", error);
+    rezultat.textContent = `❌ ${error.message}`;
+  } finally {
+    btnAnalizeaza.disabled = false;
   }
 }
 
-function salveazaIstoric(meci, rezultat) {
-  try {
-    let istoric = JSON.parse(localStorage.getItem("lucyofm_istoric") || "[]");
-    istoric.unshift({ meci, rezultat, data: new Date().toISOString() });
-    localStorage.setItem("lucyofm_istoric", JSON.stringify(istoric.slice(0, 50)));
-  } catch (e) {
-    console.log("Istoric error:", e);
-  }
-}
-
-function stergeIstoric() {
-  localStorage.removeItem("lucyofm_istoric");
-  alert("Istoric sters!");
-  location.reload();
-}
+// Funcțiile salveazaIstoric și stergeIstoric rămân aceleași

@@ -1,8 +1,6 @@
-{
+ {
   "name": "lucyofm-bot",
-  "version": "1.0.0",
   "type": "module",
-  "description": "Analize meciuri sportive cu AI",
   "dependencies": {
     "openai": "^4.52.7"
   }
